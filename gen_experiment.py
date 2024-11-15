@@ -32,7 +32,7 @@ for lr, eps, rep in settings:
     expt_call = (
         f"{base_call} "
         f"--lr {lr} "
-        f"--epsilons {eps}"
+        f"--epsilon {eps}"
     )
     print(expt_call, file=output_file)
 
