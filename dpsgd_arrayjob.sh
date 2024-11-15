@@ -99,11 +99,11 @@ conda activate ${CONDA_ENV_NAME}
 echo "Moving input data to the compute node's scratch space: $SCRATCH_DISK"
 
 # input data directory path on the DFS - change line below if loc different
-repo_home=/home/${USER}/cluster-scripts
-src_path=${repo_home}/experiments/examples/mnist/data/input
+repo_home=/home/${USER}/Pytorch_workshop
+src_path=${repo_home}/Pytorch_workshop/cifar10
 
 # input data directory path on the scratch disk of the node
-dest_path=${SCRATCH_HOME}/mnist/data/input
+dest_path=${SCRATCH_HOME}/Pytorch_workshop/cifar10
 mkdir -p ${dest_path}  # make it if required
 
 # Important notes about rsync:

@@ -8,7 +8,7 @@ USER = os.getenv('USER')
 SCRATCH_DISK = '/disk/scratch'
 SCRATCH_HOME = f'{SCRATCH_DISK}/{USER}'
 
-DATA_HOME = f'{SCRATCH_HOME}/mnist/data'
+DATA_HOME = f'{SCRATCH_HOME}/Pytorch_workshop/cifar10'
 base_call = (f"python main.py -i {DATA_HOME}/input -o {DATA_HOME}/output "
              "--epochs 20")
 repeats = 3
