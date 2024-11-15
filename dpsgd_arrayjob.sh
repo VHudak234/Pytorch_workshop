@@ -142,8 +142,8 @@ echo "Command ran successfully!"
 
 echo "Moving output data back to DFS"
 
-src_path=${SCRATCH_HOME}/mnist/data/output
-dest_path=${repo_home}/experiments/examples/mnist/data/output
+src_path=${SCRATCH_HOME}/output
+dest_path=${repo_home}/Pytorch_workshop/cifar10/output
 rsync --archive --update --compress --progress ${src_path}/ ${dest_path}
 
 
