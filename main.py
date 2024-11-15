@@ -61,8 +61,8 @@ def test(args, model, device, test_loader):
 
 def construct_parser():
     parser = argparse.ArgumentParser(description='DP-SGD Opacus CIFAR10 Baseline')
-    parser.add_argument('--batch-size', type=int, default=64, metavar='N',
-                        help='input batch size for training (default: 64)')
+    parser.add_argument('--batch-size', type=int, default=16, metavar='N',
+                        help='input batch size for training (default: 16)')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=20, metavar='N',
