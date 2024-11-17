@@ -110,10 +110,10 @@ def main(args):
     ])
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(args.input, train=True, download=True, transform=transform),
+        datasets.CIFAR10(args.input, train=True, download=False, transform=transform),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(args.input, train=False, download=True, transform=transform),
+        datasets.CIFAR10(args.input, train=False, download=False, transform=transform),
         batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
     model = models.resnet18(num_classes=10)
@@ -136,6 +136,8 @@ def main(args):
         scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
         start_epoch = checkpoint['epoch'] + 1
         best_loss = checkpoint['best_loss']
+        privacy_engine.load_state_dict(checkpoint['privacy_engine_state_dict'])
+        privacy_engine.attach(model, optimizer, train_loader)
     else:
         model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
             module=model,
@@ -160,6 +162,7 @@ def main(args):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'scheduler_state_dict': scheduler.state_dict(),
+                'privacy_engine_state_dict': privacy_engine.state_dict(),
                 'best_loss': best_loss,
             }, checkpoint_path)
 
