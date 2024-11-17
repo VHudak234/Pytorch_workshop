@@ -105,7 +105,7 @@ src_path=${repo_home}/cifar10/input
 # input data directory path on the scratch disk of the node
 dest_path=${SCRATCH_HOME}/cifar10/input
 mkdir -p ${dest_path}  # make it if required
-
+echo "where the files are going $dest_path"
 # Important notes about rsync:
 # * the --compress option is going to compress the data before transfer to send
 #   as a stream. THIS IS IMPORTANT - transferring many files is very very slow
