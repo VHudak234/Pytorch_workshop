@@ -110,10 +110,10 @@ def main(args):
     ])
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(args.input, train=True, download=False, transform=transform),
+        datasets.CIFAR10(args.input, train=True, download=True, transform=transform),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(args.input, train=False, download=False, transform=transform),
+        datasets.CIFAR10(args.input, train=False, download=True, transform=transform),
         batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
     model = models.resnet18(num_classes=10)
