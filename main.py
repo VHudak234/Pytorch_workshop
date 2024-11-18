@@ -164,7 +164,7 @@ def main(args):
     )
 
     for epoch in range(start_epoch, args.epochs + 1):
-        train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
+        # train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
         test_loss, test_acc = test(args, model, device, test_loader)
         scheduler.step()
 
@@ -174,7 +174,7 @@ def main(args):
             torch.save(model.state_dict(),
                        f"{args.output}/{model_name}.best.pt")
 
-    torch.save(model.state_dict(), f"{args.output}/{model_name}.final.pt")
+    torch.save(model.state_dict(), f"/disk/scratch/s2209005/cifar10/output/{model_name}.final.pt")
 
     print("Training complete!")
 
