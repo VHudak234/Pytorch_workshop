@@ -125,29 +125,43 @@ def main(args):
     privacy_engine = PrivacyEngine()
 
     # Check if a checkpoint exists
-    checkpoint_path = os.path.join(args.output, 'checkpoint.pt')
+    # checkpoint_path = os.path.join(args.output, 'checkpoint.pt')
+    config_args = [str(vv) for kk, vv in vars(args).items()
+                   if kk in ['epsilon', 'lr', 'gamma', 'seed']]
+    model_name = '_'.join(config_args)
+
     start_epoch = 1
     best_loss = float('inf')
-    if os.path.exists(checkpoint_path):
-        print(f'Loading checkpoint from {checkpoint_path}')
-        checkpoint = torch.load(checkpoint_path)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        start_epoch = checkpoint['epoch'] + 1
-        best_loss = checkpoint['best_loss']
-        privacy_engine.load_state_dict(checkpoint['privacy_engine_state_dict'])
-        privacy_engine.attach(model, optimizer, train_loader)
-    else:
-        model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
-            module=model,
-            optimizer=optimizer,
-            data_loader=train_loader,
-            epochs=args.epochs,
-            target_epsilon=args.epsilon,
-            target_delta=args.delta,
-            max_grad_norm=args.max_grad_norm,
-        )
+    # if os.path.exists(checkpoint_path):
+    #     print(f'Loading checkpoint from {checkpoint_path}')
+    #     checkpoint = torch.load(checkpoint_path)
+    #     model.load_state_dict(checkpoint['model_state_dict'])
+    #     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    #     scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+    #     start_epoch = checkpoint['epoch'] + 1
+    #     best_loss = checkpoint['best_loss']
+    #     privacy_engine.load_state_dict(checkpoint['privacy_engine_state_dict'])
+    #     privacy_engine.attach(model, optimizer, train_loader)
+    # else:
+    #     model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
+    #         module=model,
+    #         optimizer=optimizer,
+    #         data_loader=train_loader,
+    #         epochs=args.epochs,
+    #         target_epsilon=args.epsilon,
+    #         target_delta=args.delta,
+    #         max_grad_norm=args.max_grad_norm,
+    #     )
+
+    model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
+        module=model,
+        optimizer=optimizer,
+        data_loader=train_loader,
+        epochs=args.epochs,
+        target_epsilon=args.epsilon,
+        target_delta=args.delta,
+        max_grad_norm=args.max_grad_norm,
+    )
 
     for epoch in range(start_epoch, args.epochs + 1):
         train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
@@ -157,14 +171,10 @@ def main(args):
         if test_loss < best_loss:
             best_loss = test_loss
             print(f"Saving new best model at epoch {epoch}")
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'scheduler_state_dict': scheduler.state_dict(),
-                'privacy_engine_state_dict': privacy_engine.state_dict(),
-                'best_loss': best_loss,
-            }, checkpoint_path)
+            torch.save(model.state_dict(),
+                       f"{args.output}/{model_name}.best.pt")
+
+    torch.save(model.state_dict(), f"{args.output}/{model_name}.final.pt")
 
     print("Training complete!")
 
