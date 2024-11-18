@@ -119,7 +119,7 @@ def main(args):
     model = models.resnet18(num_classes=10)
     model = ModuleValidator.fix(model).to(device)
 
-    optimizer = optim.RMSprop(model.parameters(), lr=args.lr)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
 
     privacy_engine = PrivacyEngine()
