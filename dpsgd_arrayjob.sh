@@ -143,7 +143,7 @@ echo "Command ran successfully!"
 
 echo "Moving output data back to DFS"
 
-src_path=${SCRATCH_HOME}/Pytorch_workshop/cifar10/output
+src_path=${SCRATCH_HOME}/cifar10/output
 mkdir -p src_path
 dest_path=${repo_home}/cifar10/output
 rsync --archive --update --compress --progress ${src_path}/ ${dest_path}
