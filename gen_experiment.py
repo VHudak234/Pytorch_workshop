@@ -20,7 +20,7 @@ settings = [(lr, eps, rep) for lr in learning_rates for eps in epsilons
 nr_expts = len(learning_rates) * len(epsilons) * repeats
 
 nr_servers = 10
-avg_expt_time = 20  # mins
+avg_expt_time = 100  # mins
 print(f'Total experiments = {nr_expts}')
 print(f'Estimated time = {(nr_expts / nr_servers * avg_expt_time)/60} hrs')
 

@@ -84,15 +84,16 @@ def construct_parser():
                         help='Target delta for differential privacy (default: 1e-5)')
     parser.add_argument('--max-grad-norm', type=float, default=1.0,
                         help='Maximum gradient norm for differential privacy')
-    parser.add_argument('-i', '--input', required=True, help='Path to the '
-                                                             'input data for the model to read')
-    parser.add_argument('-o', '--output', required=True, help='Path to the '
-                                                              'directory to write output to')
+    parser.add_argument('-i', '--input', required=True,
+                        help='Path to the input data for the model to read')
+    parser.add_argument('-o', '--output', required=True,
+                        help='Path to the directory to write output to')
     return parser
 
 
 def main(args):
     use_cuda = not args.no_cuda and torch.cuda.is_available()
+    print(use_cuda)
     device = torch.device("cuda" if use_cuda else "cpu")
 
     if args.seed is None:
@@ -163,9 +164,12 @@ def main(args):
         max_grad_norm=args.max_grad_norm,
     )
 
+    log_fh = open(f'{args.output}/{model_name}.log', 'w')
+    print('epoch,trn_loss,trn_acc,vld_loss,vld_acc', file=log_fh)
     for epoch in range(start_epoch, args.epochs + 1):
         train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
         test_loss, test_acc = test(args, model, device, test_loader)
+        print(f'{epoch},{test_loss},{test_acc}', file=log_fh)
         scheduler.step()
 
         if test_loss < best_loss:
@@ -175,7 +179,7 @@ def main(args):
                        f"{args.output}/{model_name}.best.pt")
 
     torch.save(model.state_dict(), f"/disk/scratch/s2209005/cifar10/output/{model_name}.final.pt")
-
+    log_fh.close()
     print("Training complete!")
 
 
