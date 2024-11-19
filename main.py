@@ -163,8 +163,10 @@ def main(args):
         target_delta=args.delta,
         max_grad_norm=args.max_grad_norm,
     )
-
-    log_fh = open(f'{args.output}/{model_name}.log', 'w')
+    os.makedirs(args.output, exist_ok=True)
+    log_path = f'{args.output}/{model_name}.log'
+    print(f"Opening log file at: {log_path}")
+    log_fh = open(log_path, 'w')
     print('epoch,trn_loss,trn_acc,vld_loss,vld_acc', file=log_fh)
     for epoch in range(start_epoch, args.epochs + 1):
         train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
