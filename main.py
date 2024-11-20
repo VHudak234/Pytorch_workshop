@@ -21,7 +21,7 @@ def train(args, model, device, train_loader, optimizer, epoch, privacy_engine):
         output = model(data)
         loss = criterion(output, target)
         train_loss += loss.item() * len(data)
-        pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+        pred = output.argmax(dim=1, keepdim=True)
         correct += pred.eq(target.view_as(pred)).sum().item()
         loss.backward()
         optimizer.step()
@@ -48,7 +48,7 @@ def test(args, model, device, test_loader):
             output = model(data)
             loss = criterion(output, target)
             test_loss += loss.item() * len(data)
-            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+            pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
@@ -93,7 +93,6 @@ def construct_parser():
 
 def main(args):
     use_cuda = not args.no_cuda and torch.cuda.is_available()
-    print(use_cuda)
     device = torch.device("cuda" if use_cuda else "cpu")
 
     if args.seed is None:
@@ -120,10 +119,11 @@ def main(args):
     model = models.resnet18(num_classes=10)
     model = ModuleValidator.fix(model).to(device)
 
+    #TODO try momentum with values in range [0.3,0.9]
     optimizer = optim.SGD(model.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
 
-    privacy_engine = PrivacyEngine()
+    privacy_engine = PrivacyEngine(accountant='rdp')
 
     # Check if a checkpoint exists
     # checkpoint_path = os.path.join(args.output, 'checkpoint.pt')
@@ -171,7 +171,7 @@ def main(args):
     for epoch in range(start_epoch, args.epochs + 1):
         train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
         test_loss, test_acc = test(args, model, device, test_loader)
-        print(f'{epoch},{test_loss},{test_acc}', file=log_fh)
+        print(f'{epoch}, {train_loss}, {train_acc},{test_loss},{test_acc}', file=log_fh)
         scheduler.step()
 
         if test_loss < best_loss:
@@ -179,6 +179,7 @@ def main(args):
             print(f"Saving new best model at epoch {epoch}")
             torch.save(model.state_dict(),
                        f"{args.output}/{model_name}.best.pt")
+            print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
 
     torch.save(model.state_dict(), f"/disk/scratch/s2209005/cifar10/output/{model_name}.final.pt")
     log_fh.close()
