@@ -4,12 +4,10 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sympy.logic.boolalg import Boolean
 from torchvision import datasets, transforms, models
 from torch.optim.lr_scheduler import StepLR
 from opacus import PrivacyEngine
 from opacus.validators import ModuleValidator
-from traitlets.config import boolean_flag
 
 
 def train(args, model, device, train_loader, optimizer, epoch, privacy_engine=None):
