@@ -26,7 +26,7 @@ print(f'Estimated time = {(nr_expts / nr_servers * avg_expt_time)/60} hrs')
 
 output_file = open("SGD_ExperimentLr0.1_to_0.0001.txt", "w")
 
-for lr, eps, epoch in settings:
+for lr, epoch in settings:
     # Note that we don't set a seed for rep - a seed is selected at random
     # and recorded in the output data by the python script
     expt_call = (
