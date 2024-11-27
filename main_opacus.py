@@ -4,13 +4,16 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from sympy.logic.boolalg import Boolean
 from torchvision import datasets, transforms, models
 from torch.optim.lr_scheduler import StepLR
 from opacus import PrivacyEngine
 from opacus.validators import ModuleValidator
+from traitlets.config import boolean_flag
 
 
-def train(args, model, device, train_loader, optimizer, epoch, privacy_engine):
+def train(args, model, device, train_loader, optimizer, epoch, privacy_engine=None):
+
     model.train()
     train_loss = 0
     correct = 0
@@ -27,11 +30,15 @@ def train(args, model, device, train_loader, optimizer, epoch, privacy_engine):
         optimizer.step()
 
         if batch_idx % args.log_interval == 0:
-            epsilon = privacy_engine.get_epsilon(args.delta)
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} (ε = {:.2f}, δ = {})'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                       100. * batch_idx / len(train_loader), loss.item(), epsilon, args.delta))
-
+            if args.private:
+                epsilon = privacy_engine.get_epsilon(args.delta)
+                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} (ε = {:.2f}, δ = {})'.format(
+                    epoch, batch_idx * len(data), len(train_loader.dataset),
+                           100. * batch_idx / len(train_loader), loss.item(), epsilon, args.delta))
+            else:
+                print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    epoch, batch_idx * len(data), len(train_loader.dataset),
+                           100. * batch_idx / len(train_loader), loss.item()))
     train_loss /= len(train_loader.dataset)
     accuracy = correct / len(train_loader.dataset)
     return train_loss, accuracy
@@ -67,8 +74,8 @@ def construct_parser():
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=20, metavar='N',
                         help='number of epochs to train (default: 20)')
-    parser.add_argument('--lr', type=float, default=0.0001, metavar='LR',
-                        help='learning rate (default: 0.0001)')
+    parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
+                        help='learning rate (default: 0.01)')
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
                         help='Learning rate step gamma (default: 0.7)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
@@ -78,7 +85,7 @@ def construct_parser():
     parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                         help='how many batches to wait before logging '
                              'training status')
-    parser.add_argument('--epsilon', type=float, required=True,
+    parser.add_argument('--epsilon', type=float, default=5,
                         help='Target epsilon for differential privacy')
     parser.add_argument('--delta', type=float, default=1e-5,
                         help='Target delta for differential privacy (default: 1e-5)')
@@ -88,6 +95,8 @@ def construct_parser():
                         help='Path to the input data for the model to read')
     parser.add_argument('-o', '--output', required=True,
                         help='Path to the directory to write output to')
+    parser.add_argument('--private', type=int, default=1,
+                        help='Set privacy of model')
     return parser
 
 
@@ -102,6 +111,7 @@ def main(args):
     if use_cuda:
         torch.cuda.manual_seed_all(args.seed)
 
+    private = args.private
     cifar10_mean = (0.4914, 0.4822, 0.4465)
     cifar10_std = (0.2023, 0.1994, 0.2010)
     transform = transforms.Compose([
@@ -119,67 +129,63 @@ def main(args):
     model = models.resnet18(num_classes=10)
     model = ModuleValidator.fix(model).to(device)
 
-    #TODO try momentum with values in range [0.3,0.9]
     optimizer = optim.SGD(model.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
 
-    privacy_engine = PrivacyEngine(accountant='rdp')
 
     # Check if a checkpoint exists
     # checkpoint_path = os.path.join(args.output, 'checkpoint.pt')
     config_args = [str(vv) for kk, vv in vars(args).items()
                    if kk in ['epsilon', 'lr', 'gamma', 'seed']]
-    model_name = '_'.join(config_args)
-
+    if private:
+        model_name = '_'.join(config_args)
+    else:
+        model_name = 'SGD_'.join(config_args)
     start_epoch = 1
     best_loss = float('inf')
-    # if os.path.exists(checkpoint_path):
-    #     print(f'Loading checkpoint from {checkpoint_path}')
-    #     checkpoint = torch.load(checkpoint_path)
-    #     model.load_state_dict(checkpoint['model_state_dict'])
-    #     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    #     scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-    #     start_epoch = checkpoint['epoch'] + 1
-    #     best_loss = checkpoint['best_loss']
-    #     privacy_engine.load_state_dict(checkpoint['privacy_engine_state_dict'])
-    #     privacy_engine.attach(model, optimizer, train_loader)
-    # else:
-    #     model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
-    #         module=model,
-    #         optimizer=optimizer,
-    #         data_loader=train_loader,
-    #         epochs=args.epochs,
-    #         target_epsilon=args.epsilon,
-    #         target_delta=args.delta,
-    #         max_grad_norm=args.max_grad_norm,
-    #     )
-
-    model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
-        module=model,
-        optimizer=optimizer,
-        data_loader=train_loader,
-        epochs=args.epochs,
-        target_epsilon=args.epsilon,
-        target_delta=args.delta,
-        max_grad_norm=args.max_grad_norm,
-    )
     os.makedirs(args.output, exist_ok=True)
     log_path = f'{args.output}/{model_name}.log'
     print(f"Opening log file at: {log_path}")
     log_fh = open(log_path, 'w')
     print('epoch,trn_loss,trn_acc,vld_loss,vld_acc', file=log_fh)
-    for epoch in range(start_epoch, args.epochs + 1):
-        train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
-        test_loss, test_acc = test(args, model, device, test_loader)
-        print(f'{epoch}, {train_loss}, {train_acc},{test_loss},{test_acc}', file=log_fh)
-        scheduler.step()
+    if private:
+        privacy_engine = PrivacyEngine(accountant='rdp')
+        model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
+            module=model,
+            optimizer=optimizer,
+            data_loader=train_loader,
+            epochs=args.epochs,
+            target_epsilon=args.epsilon,
+            target_delta=args.delta,
+            max_grad_norm=args.max_grad_norm,
+        )
 
-        if test_loss < best_loss:
-            best_loss = test_loss
-            print(f"Saving new best model at epoch {epoch}")
-            torch.save(model.state_dict(),
-                       f"{args.output}/{model_name}.best.pt")
-            print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
+        for epoch in range(start_epoch, args.epochs + 1):
+            train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
+            test_loss, test_acc = test(args, model, device, test_loader)
+            print(f'{epoch}, {train_loss}, {train_acc},{test_loss},{test_acc}', file=log_fh)
+            scheduler.step()
+
+            if test_loss < best_loss:
+                best_loss = test_loss
+                print(f"Saving new best model at epoch {epoch}")
+                torch.save(model.state_dict(),
+                           f"{args.output}/{model_name}.best.pt")
+                print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
+    else:
+        for epoch in range(start_epoch, args.epochs + 1):
+            train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch)
+            test_loss, test_acc = test(args, model, device, test_loader)
+            print(f'{epoch}, {train_loss}, {train_acc},{test_loss},{test_acc}', file=log_fh)
+            scheduler.step()
+
+            if test_loss < best_loss:
+                best_loss = test_loss
+                print(f"Saving new best model at epoch {epoch}")
+                torch.save(model.state_dict(),
+                           f"{args.output}/{model_name}.best.pt")
+                print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
+
 
     torch.save(model.state_dict(), f"/disk/scratch/s2209005/cifar10/output/{model_name}.final.pt")
     log_fh.close()
