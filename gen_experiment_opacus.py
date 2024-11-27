@@ -9,7 +9,7 @@ SCRATCH_DISK = '/disk/scratch'
 SCRATCH_HOME = f'{SCRATCH_DISK}/{USER}'
 
 DATA_HOME = f'{SCRATCH_HOME}/cifar10'
-base_call = (f"python main.py -i {DATA_HOME}/input -o {DATA_HOME}/output ")
+base_call = (f"python main_opacus.py -i {DATA_HOME}/input -o {DATA_HOME}/output ")
 
 epochs = [20,15]
 learning_rates = [0.1, 0.05, 0.01, 0.001]
