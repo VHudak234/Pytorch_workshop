@@ -26,7 +26,7 @@ print(f'Estimated time = {(nr_expts / nr_servers * avg_expt_time)/60} hrs')
 
 output_file = open("DPSGD_EPS3-20_LR0.05-0.001Repeats.txt", "w")
 
-for lr, eps, epoch in settings:
+for lr, eps in settings:
     # Note that we don't set a seed for rep - a seed is selected at random
     # and recorded in the output data by the python script
     expt_call = (
