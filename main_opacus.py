@@ -74,8 +74,6 @@ def construct_parser():
                         help='number of epochs to train (default: 20)')
     parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                         help='learning rate (default: 0.01)')
-    parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
-                        help='Learning rate step gamma (default: 0.7)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=None, metavar='S',
@@ -128,8 +126,6 @@ def main(args):
     model = ModuleValidator.fix(model).to(device)
 
     optimizer = optim.SGD(model.parameters(), lr=args.lr)
-    scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
-
 
     # Check if a checkpoint exists
     # checkpoint_path = os.path.join(args.output, 'checkpoint.pt')
@@ -162,7 +158,6 @@ def main(args):
             train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
             test_loss, test_acc = test(args, model, device, test_loader)
             print(f'{epoch}, {train_loss}, {train_acc},{test_loss},{test_acc}', file=log_fh)
-            scheduler.step()
 
             if test_loss < best_loss:
                 best_loss = test_loss
@@ -175,7 +170,6 @@ def main(args):
             train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch)
             test_loss, test_acc = test(args, model, device, test_loader)
             print(f'{epoch}, {train_loss}, {train_acc},{test_loss},{test_acc}', file=log_fh)
-            scheduler.step()
 
             if test_loss < best_loss:
                 best_loss = test_loss
