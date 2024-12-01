@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms, models
-from torch.optim.lr_scheduler import StepLR
 from opacus import PrivacyEngine
 from opacus.validators import ModuleValidator
 
@@ -130,7 +129,7 @@ def main(args):
     # Check if a checkpoint exists
     # checkpoint_path = os.path.join(args.output, 'checkpoint.pt')
     config_args = [str(vv) for kk, vv in vars(args).items()
-                   if kk in ['epsilon', 'lr', 'gamma', 'seed']]
+                   if kk in ['epsilon', 'lr', 'seed']]
     if private:
         model_name = '_'.join(config_args)
     else:
