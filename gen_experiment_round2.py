@@ -13,7 +13,7 @@ base_call = (f"python main_opacus.py -i {DATA_HOME}/input -o {DATA_HOME}/output 
 
 repeats = 2
 learning_rates = [0.05, 0.01, 0.001]
-epsilons = [3,5,8,12,15,20]
+epsilons = [2,8,15,20]
 
 settings = [(lr, eps) for lr in learning_rates for eps in epsilons
             for repeat in range(repeats)]
@@ -24,7 +24,7 @@ avg_expt_time = 100  # mins
 print(f'Total experiments = {nr_expts}')
 print(f'Estimated time = {(nr_expts / nr_servers * avg_expt_time)/60} hrs')
 
-output_file = open("DPSGD_EPS3-20_LR0.05-0.001Repeats.txt", "w")
+output_file = open("DPSGD_EPS2-15_LR0.05-0.001Repeats.txt", "w")
 
 for lr, eps in settings:
     # Note that we don't set a seed for rep - a seed is selected at random
