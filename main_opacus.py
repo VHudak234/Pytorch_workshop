@@ -162,6 +162,7 @@ def main(args):
                 best_loss = test_loss
                 print(f"Saving new best model at epoch {epoch}")
                 torch.save(model.state_dict(),
+                           args,
                            f"{args.output}/{model_name}.best.pt")
                 print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
     else:
@@ -174,6 +175,7 @@ def main(args):
                 best_loss = test_loss
                 print(f"Saving new best model at epoch {epoch}")
                 torch.save(model.state_dict(),
+                           args,
                            f"{args.output}/{model_name}.best.pt")
                 print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
 
