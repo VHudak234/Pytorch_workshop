@@ -13,7 +13,7 @@ base_call = (f"python main_opacus.py -i {DATA_HOME}/input -o {DATA_HOME}/output 
 
 repeats = 2
 learning_rates = [0.05, 0.01, 0.001]
-epsilons = [2,8,15,20]
+epsilons = [2,10,20,50]
 
 settings = [(lr, eps) for lr in learning_rates for eps in epsilons
             for repeat in range(repeats)]
