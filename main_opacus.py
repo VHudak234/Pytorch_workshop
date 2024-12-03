@@ -132,7 +132,8 @@ def main(args):
 
     # Check if a checkpoint exists
     # checkpoint_path = os.path.join(args.output, 'checkpoint.pt')
-    config_args = [f"{kk}={vv}" for kk, vv in vars(args).items()]
+    config_args = [str(vv) for kk, vv in vars(args).items()
+                   if kk in ['epsilon', 'lr', 'seed', 'momentum']]
     if private:
         model_name = '_'.join(config_args)
     else:
