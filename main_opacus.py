@@ -90,8 +90,12 @@ def construct_parser():
                         help='Path to the input data for the model to read')
     parser.add_argument('-o', '--output', required=True,
                         help='Path to the directory to write output to')
-    parser.add_argument('--private', type=int, default=1,
-                        help='Set privacy of model')
+    # parser.add_argument('--private', type=int, default=1,
+                        # help='Set privacy of model')
+    parser.add_argument('--private', action='store_true',
+                        help='Enable differential privacy')
+    parser.add_argument('--momentum', type=float, default=0.0,
+                        help='Set momentum of optimizer')
     return parser
 
 
@@ -124,16 +128,15 @@ def main(args):
     model = models.resnet18(num_classes=10)
     model = ModuleValidator.fix(model).to(device)
 
-    optimizer = optim.SGD(model.parameters(), lr=args.lr)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
     # Check if a checkpoint exists
     # checkpoint_path = os.path.join(args.output, 'checkpoint.pt')
-    config_args = [str(vv) for kk, vv in vars(args).items()
-                   if kk in ['epsilon', 'lr', 'seed']]
+    config_args = [f"{kk}={vv}" for kk, vv in vars(args).items()]
     if private:
         model_name = '_'.join(config_args)
     else:
-        model_name = 'SGD_'.join(config_args)
+        model_name = 'SGD' + '_'.join(config_args)
     start_epoch = 1
     best_loss = float('inf')
     os.makedirs(args.output, exist_ok=True)
