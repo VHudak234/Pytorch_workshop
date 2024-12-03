@@ -26,13 +26,14 @@ avg_expt_time = 100  # mins
 print(f'Total experiments = {nr_expts}')
 print(f'Estimated time = {(nr_expts / nr_servers * avg_expt_time)/60} hrs')
 
-output_file = open("DPSGD_EPS2-20Momentum0.7-0.9.txt", "w")
+output_file = open("DPSGD_EPS2-20Momentum0.7-0.9BatchSize32.txt", "w")
 
 for eps, momentum in settings:
     # Note that we don't set a seed for rep - a seed is selected at random
     # and recorded in the output data by the python script
     expt_call = (
         f"{base_call} "
+        f"--batch-size 32 "
         f"--epsilon {eps} "
         f"--momentum {momentum}"
     )
