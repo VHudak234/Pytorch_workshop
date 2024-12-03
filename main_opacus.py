@@ -92,8 +92,8 @@ def construct_parser():
                         help='Path to the directory to write output to')
     # parser.add_argument('--private', type=int, default=1,
                         # help='Set privacy of model')
-    parser.add_argument('--private', action='store_true', default=True,
-                        help='Enable differential privacy')
+    parser.add_argument('--private', type=int, default=1,
+                        help='Enable differential privacy (Enabled by default)')
     parser.add_argument('--momentum', type=float, default=0.0,
                         help='Set momentum of optimizer')
     return parser
