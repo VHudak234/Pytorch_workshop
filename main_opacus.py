@@ -7,7 +7,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms, models
 from opacus import PrivacyEngine
 from opacus.validators import ModuleValidator
-
+from dice_sgd import DiceSGD
 
 def train(args, model, device, train_loader, optimizer, epoch, privacy_engine=None):
 
@@ -86,16 +86,18 @@ def construct_parser():
                         help='Target delta for differential privacy (default: 1e-5)')
     parser.add_argument('--max-grad-norm', type=float, default=1.0,
                         help='Maximum gradient norm for differential privacy')
+    parser.add_argument('--max-ef-norm', type=float, default=1.0,
+                        help='Maximum norm for error feedback mechanism')
     parser.add_argument('-i', '--input', required=True,
                         help='Path to the input data for the model to read')
     parser.add_argument('-o', '--output', required=True,
                         help='Path to the directory to write output to')
-    # parser.add_argument('--private', type=int, default=1,
-                        # help='Set privacy of model')
     parser.add_argument('--private', type=int, default=1,
                         help='Enable differential privacy (Enabled by default)')
     parser.add_argument('--momentum', type=float, default=0.0,
                         help='Set momentum of optimizer')
+    parser.add_argument('--Dice', type=int, default=0,
+                        help='Enable error feedback mechanism for eliminating clipping bias (Disabled by default)')
     return parser
 
 
@@ -106,18 +108,23 @@ def main(args):
     if args.seed is None:
         args.seed = torch.randint(0, 2**32, (1,)).item()
         print(f'You did not set --seed, {args.seed} was chosen')
+
     torch.manual_seed(args.seed)
+
     if use_cuda:
         torch.cuda.manual_seed_all(args.seed)
 
     private = args.private
+
     cifar10_mean = (0.4914, 0.4822, 0.4465)
     cifar10_std = (0.2023, 0.1994, 0.2010)
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(cifar10_mean, cifar10_std),
     ])
+
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
+
     train_loader = torch.utils.data.DataLoader(
         datasets.CIFAR10(args.input, train=True, download=False, transform=transform),
         batch_size=args.batch_size, shuffle=True, **kwargs)
@@ -128,10 +135,19 @@ def main(args):
     model = models.resnet18(num_classes=10)
     model = ModuleValidator.fix(model).to(device)
 
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
-    # Check if a checkpoint exists
-    # checkpoint_path = os.path.join(args.output, 'checkpoint.pt')
+    if args.Dice:
+        base_optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+        optimizer = DiceSGD(
+            optimizer=base_optimizer,
+            noise_multiplier=0,
+            max_grad_norm=args.max_grad_norm,
+            max_ef_norm=args.max_ef_norm,
+            expected_batch_size=args.batch_size
+        )
+    else:
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+
     config_args = [str(vv) for kk, vv in vars(args).items()
                    if kk in ['epsilon', 'lr', 'seed', 'momentum']]
     if private:
@@ -140,11 +156,15 @@ def main(args):
         model_name = 'SGD' + '_'.join(config_args)
     start_epoch = 1
     best_loss = float('inf')
+
     os.makedirs(args.output, exist_ok=True)
+
     log_path = f'{args.output}/{model_name}.log'
     print(f"Opening log file at: {log_path}")
+
     log_fh = open(log_path, 'w')
     print('epoch,trn_loss,trn_acc,vld_loss,vld_acc', file=log_fh)
+
     if private:
         privacy_engine = PrivacyEngine(accountant='rdp')
         model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
@@ -169,8 +189,6 @@ def main(args):
                     "state_dict": model.state_dict(),
                     "args": args
                 }, f"{args.output}/{model_name}.best.pt")
-                # torch.save(model.state_dict(),
-                #            f"{args.output}/{model_name}.best.pt")
                 print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
     else:
         for epoch in range(start_epoch, args.epochs + 1):
@@ -185,8 +203,6 @@ def main(args):
                     "state_dict": model.state_dict(),
                     "args": args
                 }, f"{args.output}/{model_name}.best.pt")
-                # torch.save(model.state_dict(),
-                #            f"{args.output}/{model_name}.best.pt")
                 print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
 
 
