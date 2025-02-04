@@ -111,7 +111,7 @@ def train(args, model, device, train_loader, optimizer, epoch, privacy_engine=No
         return train_loss, accuracy
 
 
-def test(args, model, device, test_loader):
+def test(args, model, device, test_loader, optimizer=None):
     model.eval()
     if args.dataset == 'agnews':
         test_loss = 0.0
@@ -122,7 +122,7 @@ def test(args, model, device, test_loader):
             with BatchMemoryManager(
                     data_loader=test_loader,
                     max_physical_batch_size=args.test_batch_size,
-                    optimizer=None
+                    optimizer=optimizer
             ) as memory_safe_data_loader:
                 for batch_idx, batch in enumerate(memory_safe_data_loader):
                     input_ids = batch["input_ids"].to(device)
@@ -302,7 +302,7 @@ def main(args):
 
         for epoch in range(start_epoch, args.epochs + 1):
             train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine, scheduler)
-            test_loss, test_acc = test(args, model, device, test_loader)
+            test_loss, test_acc = test(args, model, device, test_loader, optimizer)
             print(f'{epoch}, {train_loss}, {train_acc},{test_loss},{test_acc}', file=log_fh)
 
             if test_loss < best_loss:
