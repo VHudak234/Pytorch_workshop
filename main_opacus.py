@@ -60,7 +60,7 @@ def train(args, model, device, train_loader, optimizer, epoch, privacy_engine=No
 
                 if batch_idx % args.log_interval == 0:
                     avg_loss = batch_loss / args.log_interval
-                    batch_accuracy = batch_correct / batch_samples
+                    batch_accuracy = batch_correct / batch_samples * 100.
                     if args.private:
                         epsilon = privacy_engine.get_epsilon(args.delta)
                         print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tAccuracy: {:.2f}% (ε = {:.2f}, δ = {})'.format(
@@ -254,6 +254,7 @@ def main(args):
         )
 
     if text:
+        # TODO load pretrained transformer
         config = RobertaConfig(
             vocab_size=50265,
             hidden_size=768,

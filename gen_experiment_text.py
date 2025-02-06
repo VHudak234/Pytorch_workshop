@@ -9,7 +9,7 @@ SCRATCH_DISK = '/disk/scratch'
 SCRATCH_HOME = f'{SCRATCH_DISK}/{USER}'
 
 DATA_HOME = f'{SCRATCH_HOME}/agnews'
-base_call = (f"python main_opacus.py --i {DATA_HOME} --o {DATA_HOME}/output --dataset 'agnews' --epochs 20 ")
+base_call = (f"python main_opacus.py --i {DATA_HOME} --o {DATA_HOME}/output --dataset 'agnews' --epochs 20 --test-batch-size 8")
 
 learning_rates = [0.00005,0.00001,0.000025]
 epsilons = [2,5,8,12,15,20]
