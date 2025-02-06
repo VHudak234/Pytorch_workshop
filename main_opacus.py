@@ -11,7 +11,7 @@ from opacus import PrivacyEngine
 from opacus.validators import ModuleValidator
 import timm
 from datasets import load_dataset, load_from_disk
-from transformers import DataCollatorWithPadding, RobertaTokenizer, RobertaForSequenceClassification
+from transformers import DataCollatorWithPadding, RobertaTokenizer, RobertaForSequenceClassification, RobertaConfig
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 
 def train(args, model, device, train_loader, optimizer, epoch, privacy_engine=None, scheduler=None):
@@ -254,11 +254,20 @@ def main(args):
         )
 
     if text:
-        model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=4)
+        config = RobertaConfig(
+            vocab_size=50265,
+            hidden_size=768,
+            num_hidden_layers=12,
+            num_attention_heads=12,
+            intermediate_size=3072,
+            num_labels=4
+        )
+        model = RobertaForSequenceClassification(config)
         model = ModuleValidator.fix(model)
         model.to(device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
         total_steps = len(train_loader) * args.epochs
+        # TODO 10% warmup steps
         scheduler = transformers.get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
     else:
         model = models.resnet18(num_classes=10)
