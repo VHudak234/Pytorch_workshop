@@ -11,7 +11,8 @@ from opacus import PrivacyEngine
 from opacus.validators import ModuleValidator
 import timm
 from datasets import load_dataset, load_from_disk
-from transformers import DataCollatorWithPadding, RobertaTokenizer, RobertaForSequenceClassification, RobertaConfig
+from transformers import DataCollatorWithPadding, RobertaTokenizer, RobertaForSequenceClassification, RobertaConfig, \
+    AutoModelForSequenceClassification, AutoTokenizer
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 
 def train(args, model, device, train_loader, optimizer, epoch, privacy_engine=None, scheduler=None):
@@ -202,6 +203,8 @@ def construct_parser():
                         help='Enable error feedback mechanism for eliminating clipping bias (Disabled by default)')
     parser.add_argument('--dataset', type=str, default='cifar10',
                         help='Choose dataset (cifar10 for image, ag news for text)')
+    parser.add_argument('--pretrained', type=int, default=0,
+                        help='Enable pretrained transformer for text classification')
     return parser
 
 
@@ -242,7 +245,11 @@ def main(args):
             datasets.CIFAR10(args.input, train=False, download=False, transform=transform),
             batch_size=args.test_batch_size, shuffle=False, **kwargs)
     else:
-        tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+        if args.pretrained:
+            tokenizer_path = args.input + '/model'
+            tokenizer = RobertaTokenizer.from_pretrained(tokenizer_path)
+        else:
+            tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
         data_collator = DataCollatorWithPadding(tokenizer)
         tokenized_agnews = load_from_disk(args.input)
         tokenized_agnews.set_format(type="torch", columns=["input_ids", "attention_mask", "label"])
@@ -254,16 +261,19 @@ def main(args):
         )
 
     if text:
-        # TODO load pretrained transformer
-        config = RobertaConfig(
-            vocab_size=50265,
-            hidden_size=768,
-            num_hidden_layers=12,
-            num_attention_heads=12,
-            intermediate_size=3072,
-            num_labels=4
-        )
-        model = RobertaForSequenceClassification(config)
+        if args.pretrained:
+            model_path = args.input + '/model'
+            model = RobertaForSequenceClassification.from_pretrained(model_path, num_labels=4)
+        else:
+            config = RobertaConfig(
+                vocab_size=50265,
+                hidden_size=768,
+                num_hidden_layers=12,
+                num_attention_heads=12,
+                intermediate_size=3072,
+                num_labels=4
+            )
+            model = RobertaForSequenceClassification(config)
         model = ModuleValidator.fix(model)
         model.to(device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
@@ -323,50 +333,6 @@ def main(args):
                     "args": args
                 }, f"{args.output}/{model_name}.best.pt")
                 print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
-    # if dice:
-        # trans_cifar = transforms.Compose([transforms.Resize(224),transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
-        # trans_cifar_train = transforms.Compose([transforms.Resize(224), transforms.RandomHorizontalFlip(), CIFAR10Policy(), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
-        # dataset_train = datasets.CIFAR10(args.input, train=True, download=True, transform=trans_cifar_train)
-        # dataset_test = datasets.CIFAR10(args.input, train=False, download=True, transform=trans_cifar)
-        # train_loader = torch.utils.data.DataLoader(dataset_train,batch_size=args.batch_size,shuffle=True,drop_last=False, pin_memory = True)
-        # test_loader = torch.utils.data.DataLoader(dataset_test,batch_size=args.batch_size*2,shuffle=False,drop_last=False, pin_memory = False)
-        # DiceSGD(model, train_loader, test_loader, args.batch_size, args.batch_size, args.batch_size/2, args.epochs, args.max_grad_norm, args.max_ef_norm, device, args.lr, 'sgd', log_fh)
-        # privacy_engine = PrivacyEngine_Dice(
-        #     model,
-        #     batch_size=args.batch_size,
-        #     sample_size=args.batch_size,
-        #     epochs=args.epochs,
-        #     target_epsilon=args.epsilon,
-        #     max_grad_norm=args.max_grad_norm,
-        #     error_max_grad_norm=args.max_ef_norm,
-        #     loss_reduction='mean',
-        #     clipping_fn='Abadi'
-        # )
-        # privacy_engine.attach_dice(optimizer)
-        # privacy_engine = PrivacyEngine(accountant='rdp')
-        # optimizer = DiceSGDOptimizer(optimizer, noise_multiplier=0.1, max_grad_norm=args.max_grad_norm, max_ef_norm=args.max_ef_norm, expected_batch_size=args.batch_size)
-        # model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
-        #     module=model,
-        #     optimizer=optimizer,
-        #     data_loader=train_loader,
-        #     epochs=args.epochs,
-        #     target_epsilon=args.epsilon,
-        #     target_delta=args.delta,
-        #     max_grad_norm=args.max_grad_norm,
-        # )
-        # for epoch in range(start_epoch, args.epochs + 1):
-        #     train_loss, train_acc = train(args, model, device, train_loader, optimizer, epoch, privacy_engine)
-        #     test_loss, test_acc = test(args, model, device, test_loader)
-        #     print(f'{epoch}, {train_loss}, {train_acc},{test_loss},{test_acc}', file=log_fh)
-        #
-        #     if test_loss < best_loss:
-        #         best_loss = test_loss
-        #         print(f"Saving new best model at epoch {epoch}")
-        #         torch.save({
-        #             "state_dict": model.state_dict(),
-        #             "args": args
-        #         }, f"{args.output}/{model_name}.best.pt")
-        #         print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
     elif private:
         privacy_engine = PrivacyEngine(accountant='rdp')
         model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
@@ -407,8 +373,10 @@ def main(args):
                 }, f"{args.output}/{model_name}.best.pt")
                 print(f"Model saved at", f"{args.output}/{model_name}.best.pt")
 
-
-    torch.save(model.state_dict(), f"/disk/scratch/s2209005/cifar10/output/{model_name}.final.pt")
+    if text:
+        torch.save(model.state_dict(), f"/disk/scratch/s2209005/agnews/output/{model_name}.final.pt")
+    else:
+        torch.save(model.state_dict(), f"/disk/scratch/s2209005/cifar10/output/{model_name}.final.pt")
     log_fh.close()
     print("Training complete!")
 
