@@ -132,6 +132,8 @@ experiment_text_file=$1
 model_source="${dest_path}/model"
 model_copy_base="${dest_path}/model_${SLURM_ARRAY_TASK_ID}"
 
+mkdir -p model_copy_base
+
 # Use rsync for efficient copying (only copies changed files)
 if [ ! -d "${model_copy_base}" ]; then
     echo "Copying model files using rsync"
