@@ -224,6 +224,7 @@ def main(args):
     private = args.private
     dice = args.Dice
     text = args.dataset == 'agnews'
+    pretrained = args.pretrained == 1
 
     cifar10_mean = (0.4914, 0.4822, 0.4465)
     cifar10_std = (0.2023, 0.1994, 0.2010)
@@ -245,7 +246,7 @@ def main(args):
             datasets.CIFAR10(args.input, train=False, download=False, transform=transform),
             batch_size=args.test_batch_size, shuffle=False, **kwargs)
     else:
-        if args.pretrained:
+        if pretrained:
             tokenizer_path = args.input + '/model'
             tokenizer = RobertaTokenizer.from_pretrained(tokenizer_path)
         else:
@@ -261,7 +262,8 @@ def main(args):
         )
 
     if text:
-        if args.pretrained:
+        if pretrained:
+            print("Using pretrained model")
             slurm_task_id = os.getenv("SLURM_ARRAY_TASK_ID")
             model_path = args.input + f'/model_{slurm_task_id}'
             print("Model path: ", model_path)
