@@ -119,6 +119,9 @@ echo "File destination: $dest_path"
 
 rsync --archive --update --compress --progress ${src_path}/ ${dest_path}
 
+echo "Setting model folder to read-only"
+
+chmod -R 555 ${dest_path}/model
 
 # ==============================
 # Finally, run the experiment!
@@ -129,16 +132,22 @@ rsync --archive --update --compress --progress ${src_path}/ ${dest_path}
 # inclusive.
 
 experiment_text_file=$1
+model_source="${dest_path}/model"
+model_copy_base="${dest_path}/model_${SLURM_ARRAY_TASK_ID}"
+
+if [ ! -d "${model_copy_base}" ]; then
+    cp -r ${model_source} ${model_copy_base}
+fi
+
 COMMAND="`sed \"${SLURM_ARRAY_TASK_ID}q;d\" ${experiment_text_file}`"
 
-echo "Setting model folder to read-only"
-
-chmod -R 555 ${dest_path}/model
 
 echo "Running provided command: ${COMMAND}"
 eval "${COMMAND}"
 echo "Command ran successfully!"
 
+rm -rf ${model_copy_base}
+echo "Deleted model copy: ${model_copy_base}"
 
 # ======================================
 # Move output data from scratch to DFS
