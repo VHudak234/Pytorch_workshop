@@ -133,7 +133,8 @@ model_source="${dest_path}/model"
 model_copy_base="${dest_path}/model_${SLURM_ARRAY_TASK_ID}"
 
 if [ ! -d "${model_copy_base}" ]; then
-    cp -r ${model_source} ${model_copy_base}
+  echo "Copying model files"
+    cp -r ${model_source} ${model_copy_base} || echo "Copy failed!"
 fi
 
 COMMAND="`sed \"${SLURM_ARRAY_TASK_ID}q;d\" ${experiment_text_file}`"

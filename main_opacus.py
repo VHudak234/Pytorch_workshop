@@ -264,6 +264,7 @@ def main(args):
         if args.pretrained:
             slurm_task_id = os.getenv("SLURM_ARRAY_TASK_ID")
             model_path = args.input + f'/model_{slurm_task_id}'
+            print("Model path: ", model_path)
             model = RobertaForSequenceClassification.from_pretrained(model_path, num_labels=4)
         else:
             config = RobertaConfig(
