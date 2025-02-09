@@ -119,9 +119,6 @@ echo "File destination: $dest_path"
 
 rsync --archive --update --compress --progress ${src_path}/ ${dest_path}
 
-echo "Setting model folder to read-only"
-
-chmod -R 555 ${dest_path}/model
 
 # ==============================
 # Finally, run the experiment!
