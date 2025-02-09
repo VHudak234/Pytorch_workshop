@@ -132,19 +132,28 @@ experiment_text_file=$1
 model_source="${dest_path}/model"
 model_copy_base="${dest_path}/model_${SLURM_ARRAY_TASK_ID}"
 
+# Use rsync for efficient copying (only copies changed files)
 if [ ! -d "${model_copy_base}" ]; then
-  echo "Copying model files"
-    cp -r ${model_source} ${model_copy_base} || echo "Copy failed!"
+    echo "Copying model files using rsync"
+    rsync -a --info=progress2 "${model_source}/" "${model_copy_base}/" || { echo "Copy failed!"; exit 1; }
 fi
 
-COMMAND="`sed \"${SLURM_ARRAY_TASK_ID}q;d\" ${experiment_text_file}`"
+# Extract experiment command
+COMMAND="$(sed "${SLURM_ARRAY_TASK_ID}q;d" "${experiment_text_file}")"
 
+# Verify if COMMAND is not empty
+if [ -z "${COMMAND}" ]; then
+    echo "Error: No command found for SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID} in ${experiment_text_file}"
+    exit 1
+fi
 
+# Run the command
 echo "Running provided command: ${COMMAND}"
 eval "${COMMAND}"
 echo "Command ran successfully!"
 
-rm -rf ${model_copy_base}
+# Clean up copied model directory after training
+rm -rf "${model_copy_base}"
 echo "Deleted model copy: ${model_copy_base}"
 
 # ======================================
