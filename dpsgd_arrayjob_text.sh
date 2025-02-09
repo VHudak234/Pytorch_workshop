@@ -130,6 +130,11 @@ rsync --archive --update --compress --progress ${src_path}/ ${dest_path}
 
 experiment_text_file=$1
 COMMAND="`sed \"${SLURM_ARRAY_TASK_ID}q;d\" ${experiment_text_file}`"
+
+echo "Setting model folder to read-only"
+
+chmod -R 555 ${dest_path}/model
+
 echo "Running provided command: ${COMMAND}"
 eval "${COMMAND}"
 echo "Command ran successfully!"
