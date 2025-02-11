@@ -24,6 +24,8 @@ print(f'Estimated time = {(nr_expts / nr_servers * avg_expt_time)/60} hrs')
 
 output_file = open("TextEps2_20_Lr5e5_to_1e5.txt", "w")
 
+ids = [range(1,8)]
+
 for lr, eps in settings:
     # Note that we don't set a seed for rep - a seed is selected at random
     # and recorded in the output data by the python script
@@ -31,6 +33,7 @@ for lr, eps in settings:
         f"{base_call} "
         f"--lr {lr} "
         f"--epsilon {eps} "
+        f"--model_id {ids.pop()}"
     )
     print(expt_call, file=output_file)
 

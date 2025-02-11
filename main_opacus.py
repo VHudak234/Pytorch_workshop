@@ -204,6 +204,8 @@ def construct_parser():
                         help='Choose dataset (cifar10 for image, ag news for text)')
     parser.add_argument('--pretrained', type=int, default=0,
                         help='Enable pretrained transformer for text classification')
+    parser.add_argument('--model_id', type=int, default=0,
+                        help='Set directory id where the model will be loaded from')
     return parser
 
 
@@ -246,7 +248,7 @@ def main(args):
             batch_size=args.test_batch_size, shuffle=False, **kwargs)
     else:
         if pretrained:
-            tokenizer_path = args.input + '/model'
+            tokenizer_path = args.input + f'/model_{args.model_id}'
             tokenizer = RobertaTokenizer.from_pretrained(tokenizer_path)
         else:
             tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
@@ -262,10 +264,7 @@ def main(args):
 
     if text:
         if pretrained:
-            print("Using pretrained model")
-            slurm_task_id = os.getenv("SLURM_ARRAY_TASK_ID")
-            model_path = args.input + f'/model_{slurm_task_id}'
-            print("Model path: ", model_path)
+            model_path = args.input + f'/model_{args.model_id}'
             model = RobertaForSequenceClassification.from_pretrained(model_path, num_labels=4)
         else:
             config = RobertaConfig(
