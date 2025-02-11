@@ -24,7 +24,7 @@ print(f'Estimated time = {(nr_expts / nr_servers * avg_expt_time)/60} hrs')
 
 output_file = open("TextEps2_20_Lr5e5_to_1e5.txt", "w")
 
-ids = [range(1,8)]
+ids = list(range(1,9))
 
 for lr, eps in settings:
     # Note that we don't set a seed for rep - a seed is selected at random
