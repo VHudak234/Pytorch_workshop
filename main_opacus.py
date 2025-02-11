@@ -11,8 +11,7 @@ from opacus import PrivacyEngine
 from opacus.validators import ModuleValidator
 import timm
 from datasets import load_dataset, load_from_disk
-from transformers import DataCollatorWithPadding, RobertaTokenizer, RobertaForSequenceClassification, RobertaConfig, \
-    AutoModelForSequenceClassification, AutoTokenizer
+from transformers import DataCollatorWithPadding, RobertaTokenizer, RobertaForSequenceClassification, RobertaConfig
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 
 def train(args, model, device, train_loader, optimizer, epoch, privacy_engine=None, scheduler=None):
