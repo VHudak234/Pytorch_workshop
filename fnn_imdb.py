@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from opacus import PrivacyEngine
 import json
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from opacus.validators import ModuleValidator
 import text_models
 
 def train(device, args, model, train_loader, optimizer, criterion, epoch, privacy_engine=None, scheduler=None):
@@ -112,6 +113,7 @@ def main(args):
     vocab_size = len(vocab)
 
     model = text_models.ImdbFNN(vocab_size)
+    model = ModuleValidator.fix(model)
     model.to(device)
 
     criterion = nn.BCELoss()
