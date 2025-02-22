@@ -1,6 +1,5 @@
-import sys
-import os
 import argparse
+
 import torch
 from torch.utils.data import DataLoader, RandomSampler
 import torch.nn as nn
@@ -11,11 +10,13 @@ from opacus import PrivacyEngine
 from opacus.validators import ModuleValidator
 import timm
 from datasets import load_dataset, load_from_disk
-from transformers import DataCollatorWithPadding, RobertaTokenizer, RobertaForSequenceClassification, RobertaConfig
+from transformers import DataCollatorWithPadding, RobertaTokenizer, RobertaForSequenceClassification, RobertaConfig, \
+    DistilBertForSequenceClassification, DistilBertTokenizer
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 
+
 def train(args, model, device, train_loader, optimizer, epoch, privacy_engine=None, scheduler=None):
-    text = args.dataset == 'agnews'
+    text = args.dataset in ['agnews', 'imdb']
     if text:
         model.train()
         criterion = nn.CrossEntropyLoss()
@@ -201,11 +202,13 @@ def construct_parser():
     parser.add_argument('--Dice', type=int, default=0,
                         help='Enable error feedback mechanism for eliminating clipping bias (Disabled by default)')
     parser.add_argument('--dataset', type=str, default='cifar10',
-                        help='Choose dataset (cifar10 for image, ag news for text)')
+                        help='Choose dataset (cifar10 for image, ag news or imdb for text)')
     parser.add_argument('--pretrained', type=int, default=0,
                         help='Enable pretrained transformer for text classification')
     parser.add_argument('--model_id', type=int, default=0,
                         help='Set directory id where the model will be loaded from')
+    parser.add_argument('--transformer', type=str, default=None,
+                        help='Set transformer for image classification')
     return parser
 
 
@@ -224,7 +227,7 @@ def main(args):
 
     private = args.private
     dice = args.Dice
-    text = args.dataset == 'agnews'
+    text = args.dataset in ['imdb', 'agnews']
     pretrained = args.pretrained == 1
 
     cifar10_mean = (0.4914, 0.4822, 0.4465)
@@ -236,8 +239,8 @@ def main(args):
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
 
-    if args.dataset not in ['cifar10', 'agnews']:
-        raise ValueError('Dataset selected needs to be cifar10 or agnews')
+    if args.dataset not in ['cifar10', 'agnews', 'imdb']:
+        raise ValueError('Dataset selected needs to be cifar10, agnews, or imdb')
 
     if args.dataset == 'cifar10':
         train_loader = DataLoader(
@@ -248,34 +251,49 @@ def main(args):
             batch_size=args.test_batch_size, shuffle=False, **kwargs)
     else:
         if pretrained:
-            tokenizer_path = args.input + f'/model_{args.model_id}'
-            tokenizer = RobertaTokenizer.from_pretrained(tokenizer_path)
+            if args.model_id != 0:
+                tokenizer_path = args.input + f'/model_{args.model_id}'
+                tokenizer = RobertaTokenizer.from_pretrained(tokenizer_path)
+            else:
+                tokenizer_path = args.input + '/model'
+                tokenizer = RobertaTokenizer.from_pretrained(tokenizer_path)
         else:
-            tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
-        data_collator = DataCollatorWithPadding(tokenizer)
-        tokenized_agnews = load_from_disk(args.input)
-        tokenized_agnews.set_format(type="torch", columns=["input_ids", "attention_mask", "label"])
-        train_loader = DataLoader(
-            tokenized_agnews["train"], sampler=RandomSampler(tokenized_agnews["train"]), batch_size=args.batch_size, collate_fn=data_collator
-        )
-        test_loader = DataLoader(
-            tokenized_agnews["test"], sampler=RandomSampler(tokenized_agnews["test"]), batch_size=args.test_batch_size, collate_fn=data_collator
-        )
+            if args.transformer == 'distilbert':
+                # tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+                tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
+            else:
+                tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+        if args.transformer == 'distilbert':
+            data_collator = DataCollatorWithPadding(tokenizer)
+            tokenized_imdb = load_from_disk(args.input)
+            tokenized_imdb.set_format(type="torch", columns=["input_ids", "attention_mask", "label"])
+            train_loader = DataLoader(
+                tokenized_imdb["train"], sampler=RandomSampler(tokenized_imdb["train"]), batch_size=args.batch_size, collate_fn=data_collator
+            )
+            test_loader = DataLoader(
+                tokenized_imdb["test"], sampler=RandomSampler(tokenized_imdb["test"]), batch_size=args.test_batch_size, collate_fn=data_collator
+            )
+        else:
+            data_collator = DataCollatorWithPadding(tokenizer)
+            tokenized_agnews = load_from_disk(args.input)
+            tokenized_agnews.set_format(type="torch", columns=["input_ids", "attention_mask", "label"])
+            train_loader = DataLoader(
+                tokenized_agnews["train"], sampler=RandomSampler(tokenized_agnews["train"]), batch_size=args.batch_size, collate_fn=data_collator
+            )
+            test_loader = DataLoader(
+                tokenized_agnews["test"], sampler=RandomSampler(tokenized_agnews["test"]), batch_size=args.test_batch_size, collate_fn=data_collator
+            )
 
     if text:
         if pretrained:
             model_path = args.input + f'/model_{args.model_id}'
             model = RobertaForSequenceClassification.from_pretrained(model_path, num_labels=4)
         else:
-            config = RobertaConfig(
-                vocab_size=50265,
-                hidden_size=768,
-                num_hidden_layers=12,
-                num_attention_heads=12,
-                intermediate_size=3072,
-                num_labels=4
-            )
-            model = RobertaForSequenceClassification(config)
+            if args.transformer == 'distilbert':
+                # model = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased', num_labels=2)
+                model = RobertaForSequenceClassification.from_pretrained('roberta-base', num_labels=2)
+            else:
+                model = RobertaForSequenceClassification.from_pretrained('roberta-base', num_labels=4)
         model = ModuleValidator.fix(model)
         model.to(device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
@@ -301,7 +319,7 @@ def main(args):
     start_epoch = 1
     best_loss = float('inf')
 
-    os.makedirs(args.output, exist_ok=True)
+    # os.makedirs(args.output, exist_ok=True)
 
     log_path = f'{args.output}/{model_name}.log'
     print(f"Opening log file at: {log_path}")
