@@ -112,6 +112,7 @@ def main(args):
     vocab_size = len(vocab)
 
     model = text_models.ImdbFNN(vocab_size)
+    model.to(device)
 
     criterion = nn.BCELoss()
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
