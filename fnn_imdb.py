@@ -72,7 +72,7 @@ def test(device, model, test_loader, criterion):
 
 def construct_parser():
     parser = argparse.ArgumentParser(description='Model conficuration for training FNN on text data')
-    parser.add_argument('--batch-size', type=int, default=128)
+    parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--epsilon', type=int, default=5)
     parser.add_argument('--lr', type=float, required=True)
     parser.add_argument('--log-interval', type=int, default=10)
