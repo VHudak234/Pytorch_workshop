@@ -5,7 +5,6 @@ import torch.optim as optim
 from datasets import load_from_disk
 from torch.utils.data import DataLoader
 from opacus import PrivacyEngine
-import nltk
 import json
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import text_models
@@ -92,7 +91,6 @@ def construct_parser():
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    nltk.download("punkt")
     privacy_engine = None
     scheduler = None
 

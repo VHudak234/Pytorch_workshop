@@ -29,7 +29,7 @@ vocab = {"<pad>": 0, "<unk>": 1}
 for token, _ in counter.most_common(max_vocab_size - len(vocab)):
     vocab[token] = len(vocab)
 
-vocab_save_path = "/Users/vincehudak/Documents/Intellij Projects/Pytorch_workshop/imdb_data/vocab.json"
+vocab_save_path = "/home/s2209005/Pytorch_workshop/imdb_data/input/vocab.json"
 with open(vocab_save_path, "w") as f:
     json.dump(vocab, f)
 
@@ -50,7 +50,7 @@ train_dataset.set_format(type="torch", columns=["bow", "label"])
 test_dataset.set_format(type="torch", columns=["bow", "label"])
 
 # Define a custom directory root and subdirectories.
-custom_root = "/Users/vincehudak/Documents/Intellij Projects/Pytorch_workshop/imdb_data/input"
+custom_root = "/home/s2209005/Pytorch_workshop/imdb_data/input"
 train_save_path = os.path.join(custom_root, "imdb_train")
 test_save_path = os.path.join(custom_root, "imdb_test")
 
