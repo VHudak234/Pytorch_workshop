@@ -1,3 +1,4 @@
+import os
 import argparse
 import torch
 import torch.nn as nn
@@ -71,7 +72,7 @@ def test(device, model, test_loader, criterion):
 
 def construct_parser():
     parser = argparse.ArgumentParser(description='Model conficuration for training FNN on text data')
-    parser.add_argument('--batch-size', type=int, default=512)
+    parser.add_argument('--batch-size', type=int, default=128)
     parser.add_argument('--epsilon', type=int, default=5)
     parser.add_argument('--lr', type=float, required=True)
     parser.add_argument('--log-interval', type=int, default=10)
@@ -153,6 +154,8 @@ def main(args):
         model_name = f'FNN_SGDText_{args.lr}_Epochs{args.epochs}_BatchS{args.batch_size}_{seed}'
     if args.load_model:
         model_name = f'{model_name}_Loaded_model'
+
+    os.makedirs(args.output, exist_ok=True)
     log_path = f'{args.output}/{model_name}.log'
     log_fh = open(log_path, 'w')
 
@@ -166,6 +169,7 @@ def main(args):
         print(f'{epoch}, {train_loss}, {train_acc},{test_loss},{test_acc}', file=log_fh)
 
     if args.save_model:
+        os.makedirs(f"{args.output}/saved_models", exist_ok=True)
         model_save = {
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
