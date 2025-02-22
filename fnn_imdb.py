@@ -45,7 +45,7 @@ def train(device, args, model, train_loader, optimizer, criterion, epoch, privac
                            100. * batch_idx / len(train_loader), loss.item()))
     if args.scheduler:
         scheduler.step(train_loss)
-    return train_loss / len(train_loader), correct / total
+    return train_loss / total, correct / total
 
 def test(device, model, test_loader, criterion):
     model.eval()
