@@ -1,19 +1,27 @@
-DATA_HOME = "/Users/vincehudak/Documents/Intellij Projects/Pytorch_workshop/yelp"
+#!/usr/bin/env python3
+"""Script for generating experiments.txt"""
+import os
 
-script_root = "/Users/vincehudak/Documents/Intellij Projects/Pytorch_workshop/fnn_imdb.py"
+# The home dir on the node's scratch disk
+USER = os.getenv('USER')
+# This may need changing to e.g. /disk/scratch_fast depending on the cluster
+SCRATCH_DISK = '/disk/scratch'
+SCRATCH_HOME = f'{SCRATCH_DISK}/{USER}'
 
-dp_base_call = f'python "{script_root}" -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 25 --private'
+DATA_HOME = f'{SCRATCH_HOME}/imdb_data'
 
-dp_base_call_scheduler = f'python "{script_root}" -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 25 --private --scheduler'
+dp_base_call = f'python fnn_imdb.py -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 25 --private'
 
-sgd_base_call = f'python "{script_root}" -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 25'
+dp_base_call_scheduler = f'python fnn_imdb.py -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 25 --private --scheduler'
+
+sgd_base_call = f'python fnn_imdb.py -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 25'
 
 learning_rates = [0.0001, 0.0005, 0.00005]
 epsilons = [2,5,10,20]
 settings = [(lr, eps) for lr in learning_rates for eps in epsilons]
 
-sch_learning_rates = [0.0005, 0.00005]
-sch_epsilons = [2,10,20]
+sch_learning_rates = [0.0001, 0.0005, 0.00005]
+sch_epsilons = [2,5,10,20]
 sch_settings = [(lr, eps) for lr in sch_learning_rates for eps in sch_epsilons]
 
 output_file = open('FNNImdb_Text_experiments.txt', 'w')
