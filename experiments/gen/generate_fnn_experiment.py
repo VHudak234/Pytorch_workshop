@@ -10,11 +10,11 @@ SCRATCH_HOME = f'{SCRATCH_DISK}/{USER}'
 
 DATA_HOME = f'{SCRATCH_HOME}/imdb_data'
 
-dp_base_call = f'python fnn_imdb.py -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 25 --private'
+dp_base_call = f'python fnn_imdb.py -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 30 --private'
 
-dp_base_call_scheduler = f'python fnn_imdb.py -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 25 --private --scheduler'
+dp_base_call_scheduler = f'python fnn_imdb.py -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 30 --private --scheduler'
 
-sgd_base_call = f'python fnn_imdb.py -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 25'
+sgd_base_call = f'python fnn_imdb.py -i "{DATA_HOME}/input" -o "{DATA_HOME}/output" --epochs 30'
 
 learning_rates = [0.0001, 0.0005, 0.00005]
 epsilons = [2,5,10,20]
